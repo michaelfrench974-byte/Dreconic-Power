@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="voicemagic"
+version="${file.jarVersion}"
+displayName="Voice Magic"
+authors="YourName"
+description='''
+A microphone-driven magic system where you speak component words to build and cast spells.
+Edit the JSON component files to add words, balance costs, and define effects.
+'''
+
+[[dependencies.voicemagic]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.voicemagic]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"

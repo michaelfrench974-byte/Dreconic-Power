@@ -151,8 +151,8 @@ Requires **Simple Voice Chat 2.6.x for NeoForge 1.21.1** on the client and serve
 
 1. Install Simple Voice Chat and set your microphone up in its settings (press `V` in-game).
    Set the input mode to **Voice activation**, not push-to-talk, for hands-free casting.
-2. Download `vosk-model-small-en-us-0.15` from https://alphacephei.com/vosk/models
-3. Unzip it so the folder `config/voicemagic/model/` contains the folders `am`, `conf`, `graph`, ...
+2. On first launch, Voice Magic automatically downloads `vosk-model-small-en-us-0.15` from the official Vosk model host (approximately 40 MB).
+3. Keep Minecraft open and allow the download to finish. The model is installed under `config/voicemagic/model/` and reused on later launches. An internet connection is required for this first download. If automatic downloading is blocked, you can still manually extract the model so `config/voicemagic/model/` contains `am`, `conf`, `graph`, etc.
    (a single extra sub-folder level is also accepted).
 4. Start the game. `/voicemagic voice` shows: listening, Simple Voice Chat connection, speech engine state.
 5. Say at least **two** component words in a row, e.g. "flame bolt". Single stray words are ignored.

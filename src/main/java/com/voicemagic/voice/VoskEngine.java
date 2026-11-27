@@ -13,6 +13,15 @@ import org.vosk.Model;
 import org.vosk.Recognizer;
 
 import java.io.InputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -30,6 +39,14 @@ import java.util.function.Consumer;
  */
 public class VoskEngine {
     private static final Gson GSON = new Gson();
+    private static final String MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip";
+    private static final String MODEL_ARCHIVE = "vosk-model-small-en-us-0.15.zip";
+    private static final String MODEL_FOLDER = "vosk-model-small-en-us-0.15";
+    private static final long MAX_MODEL_UNPACKED_BYTES = 500L * 1024L * 1024L;
+    private static final HttpClient HTTP = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(20))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
     private static final ExecutorService EXEC = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "VoiceMagic-Vosk");
         t.setDaemon(true);
@@ -51,13 +68,15 @@ public class VoskEngine {
                 Files.createDirectories(base);
                 extractNatives(base.resolve("natives"));
 
-                Path modelDir = findModelDir(base.resolve("model"));
+                Path modelRoot = base.resolve("model");
+                Files.createDirectories(modelRoot);
+                Path modelDir = findModelDir(modelRoot);
                 if (modelDir == null) {
-                    VoiceManager.engineState = "MODEL MISSING - put the Vosk model in config/voicemagic/model";
-                    VoiceMagicMod.LOGGER.warn("Vosk model not found in {}. Download vosk-model-small-en-us-0.15 " +
-                            "from https://alphacephei.com/vosk/models and unzip its CONTENTS there.", base.resolve("model"));
-                    starting = false;
-                    return;
+                    downloadAndInstallModel(modelRoot);
+                    modelDir = findModelDir(modelRoot);
+                }
+                if (modelDir == null) {
+                    throw new IllegalStateException("Downloaded Vosk model could not be found after extraction");
                 }
                 LibVosk.setLogLevel(LogLevel.WARNINGS);
                 model = new Model(modelDir.toString());
@@ -136,6 +155,94 @@ public class VoskEngine {
         } catch (Throwable t) {
             VoiceMagicMod.LOGGER.error("Could not create recognizer", t);
             return null;
+        }
+    }
+
+    /** Downloads and safely extracts the default English Vosk model on first launch. */
+    private static void downloadAndInstallModel(Path modelRoot) throws Exception {
+        Path archive = modelRoot.resolve(MODEL_ARCHIVE + ".part");
+        Path staging = modelRoot.resolve(".installing-" + MODEL_FOLDER);
+        Path installed = modelRoot.resolve(MODEL_FOLDER);
+        VoiceManager.engineState = "downloading Vosk model...";
+        VoiceMagicMod.LOGGER.info("Vosk model is missing; downloading the English model from {}", MODEL_URL);
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(MODEL_URL))
+                    .timeout(Duration.ofMinutes(10))
+                    .header("User-Agent", "VoiceMagic/1.0 (Minecraft mod)")
+                    .GET().build();
+            HttpResponse<InputStream> response = HTTP.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if (response.statusCode() != 200) {
+                try (InputStream body = response.body()) { body.transferTo(java.io.OutputStream.nullOutputStream()); }
+                throw new java.io.IOException("Vosk model download returned HTTP " + response.statusCode());
+            }
+            try (InputStream in = new BufferedInputStream(response.body());
+                 var out = new BufferedOutputStream(Files.newOutputStream(archive))) {
+                in.transferTo(out);
+            }
+            if (Files.size(archive) < 1_000_000L) {
+                throw new java.io.IOException("Vosk model download was unexpectedly small; check your internet connection");
+            }
+
+            VoiceManager.engineState = "installing Vosk model...";
+            deleteTree(staging);
+            Files.createDirectories(staging);
+            long expanded = 0;
+            try (ZipInputStream zip = new ZipInputStream(new BufferedInputStream(Files.newInputStream(archive)))) {
+                ZipEntry entry;
+                byte[] buffer = new byte[8192];
+                while ((entry = zip.getNextEntry()) != null) {
+                    Path target = staging.resolve(entry.getName()).normalize();
+                    if (!target.startsWith(staging)) {
+                        throw new java.io.IOException("Unsafe path in Vosk model archive");
+                    }
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(target);
+                    } else {
+                        Files.createDirectories(target.getParent());
+                        try (var out = Files.newOutputStream(target)) {
+                            int count;
+                            while ((count = zip.read(buffer)) != -1) {
+                                expanded += count;
+                                if (expanded > MAX_MODEL_UNPACKED_BYTES) {
+                                    throw new java.io.IOException("Vosk model archive exceeds the extraction size limit");
+                                }
+                                out.write(buffer, 0, count);
+                            }
+                        }
+                    }
+                    zip.closeEntry();
+                }
+            }
+
+            Path extractedModel = findModelDir(staging);
+            if (extractedModel == null) {
+                throw new java.io.IOException("The downloaded archive did not contain a valid Vosk model (missing am/ folder)");
+            }
+            deleteTree(installed);
+            if (extractedModel.equals(staging)) {
+                Files.move(staging, installed, StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                // Keep the archive's model folder intact under config/voicemagic/model/.
+                Path relative = staging.relativize(extractedModel);
+                Path finalModel = installed.resolve(relative.getFileName());
+                Files.createDirectories(installed);
+                Files.move(extractedModel, finalModel, StandardCopyOption.REPLACE_EXISTING);
+                deleteTree(staging);
+            }
+            VoiceMagicMod.LOGGER.info("Vosk model downloaded and installed at {}", installed);
+        } finally {
+            Files.deleteIfExists(archive);
+            deleteTree(staging);
+        }
+    }
+
+    private static void deleteTree(Path root) throws java.io.IOException {
+        if (!Files.exists(root)) return;
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
         }
     }
 

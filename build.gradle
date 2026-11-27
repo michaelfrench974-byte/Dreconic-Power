@@ -49,8 +49,7 @@ repositories {
     maven { url = 'https://maven.maxhenkel.de/repository/public' }
 }
 
-// Bundle libraries inside the mod jar (Jar-in-Jar)
-jarJar.enable()
+
 
 dependencies {
     // Simple Voice Chat API (provided at runtime by the Simple Voice Chat mod itself)

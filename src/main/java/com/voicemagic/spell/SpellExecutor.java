@@ -185,30 +185,39 @@ public class SpellExecutor {
 
     private static void applyBlockEffects(ServerPlayer caster, BlockPos pos, SpellBlueprint spell, float power) {
         var level = caster.level();
-        var state = level.getBlockState(pos);
+        int units = Math.max(1, (int)Math.floor(spell.potency + 1.0e-4f));
 
-        if (spell.elements.contains("Fire") && (spell.modifiers.contains("Ignite") || spell.modifiers.contains("Spread"))) {
-            if (level.getBlockState(pos.above()).isAir()) {
-                level.setBlock(pos.above(), Blocks.FIRE.defaultBlockState(), 3);
+        // Discrete block effects scale in whole units: 1x affects one block,
+        // 2x affects two, etc. The line is deliberately short and horizontal
+        // to make the extra affected blocks predictable while testing.
+        for (int i = 0; i < units; i++) {
+            BlockPos affected = pos.east(i);
+            var state = level.getBlockState(affected);
+
+            if (spell.elements.contains("Fire") && (spell.modifiers.contains("Ignite") || spell.modifiers.contains("Spread"))) {
+                if (level.getBlockState(affected.above()).isAir() && state.isSolid()) {
+                    level.setBlock(affected.above(), Blocks.FIRE.defaultBlockState(), 3);
+                }
             }
-        }
 
-        if (spell.elements.contains("Ice") && spell.modifiers.contains("Construct")) {
-            if (level.getBlockState(pos.above()).isAir()) {
-                level.setBlock(pos.above(), Blocks.PACKED_ICE.defaultBlockState(), 3);
+            if (spell.elements.contains("Ice") && spell.modifiers.contains("Construct")) {
+                if (level.getBlockState(affected.above()).isAir()) {
+                    level.setBlock(affected.above(), Blocks.PACKED_ICE.defaultBlockState(), 3);
+                }
             }
-        }
 
-        if (spell.elements.contains("Earth") && spell.modifiers.contains("Construct")) {
-            if (level.getBlockState(pos.above()).isAir()) {
-                level.setBlock(pos.above(), Blocks.COBBLESTONE.defaultBlockState(), 3);
+            if (spell.elements.contains("Earth") && spell.modifiers.contains("Construct")) {
+                if (level.getBlockState(affected.above()).isAir()) {
+                    level.setBlock(affected.above(), Blocks.COBBLESTONE.defaultBlockState(), 3);
+                }
             }
-        }
 
-        if (spell.modifiers.contains("Remove")) {
-            if (!state.isAir() && state.getDestroySpeed(level, pos) >= 0 && state.getDestroySpeed(level, pos) < 50) {
-                level.destroyBlock(pos, true, caster);
+            if (spell.modifiers.contains("Remove")) {
+                if (!state.isAir() && state.getDestroySpeed(level, affected) >= 0 && state.getDestroySpeed(level, affected) < 50) {
+                    level.destroyBlock(affected, true, caster);
+                }
             }
         }
     }
+
 }

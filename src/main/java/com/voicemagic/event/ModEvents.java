@@ -19,6 +19,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
+import com.voicemagic.voice.VoiceManager;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +54,7 @@ public class ModEvents {
                     .requires(s -> s.hasPermission(2))
                     .executes(ctx -> {
                         ComponentRegistry.loadComponents();
+                        VoiceManager.onComponentsReloaded();
                         ctx.getSource().sendSuccess(() -> Component.literal("Reloaded " + ComponentRegistry.getAll().size() + " components."), true);
                         return 1;
                     }))
@@ -65,12 +68,35 @@ public class ModEvents {
                             player.sendSystemMessage(Component.literal("Set level to " + lvl));
                             return 1;
                         })))
+                .then(Commands.literal("voice")
+                    .then(Commands.literal("on").executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        VoiceManager.setEnabled(player, true);
+                        player.sendSystemMessage(Component.literal("§dVoice casting ON. Just speak your spell."));
+                        return 1;
+                    }))
+                    .then(Commands.literal("off").executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        VoiceManager.setEnabled(player, false);
+                        player.sendSystemMessage(Component.literal("§dVoice casting OFF."));
+                        return 1;
+                    }))
+                    .then(Commands.literal("status").executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        player.sendSystemMessage(Component.literal("§dVoice: " + VoiceManager.statusLine(player)));
+                        return 1;
+                    }))
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        player.sendSystemMessage(Component.literal("§dVoice: " + VoiceManager.statusLine(player)));
+                        return 1;
+                    }))
                 .then(Commands.literal("list")
                     .executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayerOrException();
                         player.sendSystemMessage(Component.literal("§eAvailable component words:"));
                         for (SpellComponent c : ComponentRegistry.getAll()) {
-                            player.sendSystemMessage(Component.literal("  §f" + c.word + " §7→ " + c.elements + " " + c.modifiers + " (cost " + c.cost + ")"));
+                            player.sendSystemMessage(Component.literal("  §f" + c.word + " §7→ " + c.elements + " " + c.modifiers + " (Caust " + c.caust + ")"));
                         }
                         return 1;
                     }))
@@ -79,6 +105,15 @@ public class ModEvents {
 
     /** Core entry point used by both the command and (later) the microphone listener */
     public static int handleSpoken(ServerPlayer player, String spokenLine) {
+        return handleSpoken(player, spokenLine, false, 1);
+    }
+
+    /**
+     * @param quiet     if true, say nothing when the line contains too few known words
+     *                  (used for always-listening mode so normal chatter is ignored)
+     * @param minWords  minimum number of recognised component words required to cast
+     */
+    public static int handleSpoken(ServerPlayer player, String spokenLine, boolean quiet, int minWords) {
         CasterData data = CasterData.get(player);
         int maxSlots = data.getSlotCount();
 
@@ -94,8 +129,10 @@ public class ModEvents {
             }
         }
 
-        if (blueprint.components.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§cNo known spell components in: \"" + spokenLine + "\""));
+        if (blueprint.components.size() < Math.max(1, minWords)) {
+            if (!quiet) {
+                player.sendSystemMessage(Component.literal("§cNo known spell components in: \"" + spokenLine + "\""));
+            }
             return 0;
         }
 

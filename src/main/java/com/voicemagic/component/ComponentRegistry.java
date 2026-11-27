@@ -64,7 +64,7 @@ public class ComponentRegistry {
         String id = obj.get("id").getAsString();
         String word = obj.get("word").getAsString();
         int score = obj.has("score") ? obj.get("score").getAsInt() : 10;
-        int cost = obj.has("cost") ? obj.get("cost").getAsInt() : 5;
+        int caust = obj.has("caust") ? obj.get("caust").getAsInt() : (obj.has("cost") ? obj.get("cost").getAsInt() : 5);
         String desc = obj.has("description") ? obj.get("description").getAsString() : "";
 
         List<String> elements = new ArrayList<>();
@@ -79,7 +79,7 @@ public class ComponentRegistry {
             for (JsonElement e : arr) modifiers.add(e.getAsString());
         }
 
-        SpellComponent comp = new SpellComponent(id, word, elements, modifiers, score, cost, desc);
+        SpellComponent comp = new SpellComponent(id, word, elements, modifiers, score, caust, desc);
         BY_ID.put(id, comp);
         BY_WORD.put(comp.word, comp);
     }
@@ -119,7 +119,7 @@ public class ComponentRegistry {
             "elements": ["Ice"],
             "modifiers": [],
             "score": 10,
-            "cost": 8,
+            "caust": 8,
             "description": "Base ice element"
           },
           {
@@ -128,7 +128,7 @@ public class ComponentRegistry {
             "elements": ["Fire"],
             "modifiers": [],
             "score": 10,
-            "cost": 8,
+            "caust": 8,
             "description": "Base fire element"
           },
           {
@@ -137,7 +137,7 @@ public class ComponentRegistry {
             "elements": ["Lightning"],
             "modifiers": [],
             "score": 10,
-            "cost": 10,
+            "caust": 10,
             "description": "Base lightning element"
           },
           {
@@ -146,7 +146,7 @@ public class ComponentRegistry {
             "elements": ["Earth"],
             "modifiers": [],
             "score": 10,
-            "cost": 8,
+            "caust": 8,
             "description": "Base earth element"
           },
           {
@@ -155,7 +155,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Construct"],
             "score": 15,
-            "cost": 12,
+            "caust": 12,
             "description": "Construct / form structure"
           },
           {
@@ -164,7 +164,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Remove"],
             "score": 12,
-            "cost": 10,
+            "caust": 10,
             "description": "Remove / destroy"
           },
           {
@@ -173,7 +173,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Move"],
             "score": 12,
-            "cost": 10,
+            "caust": 10,
             "description": "Move / force"
           },
           {
@@ -182,7 +182,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Trap"],
             "score": 15,
-            "cost": 14,
+            "caust": 14,
             "description": "Trap / immobilize"
           },
           {
@@ -191,7 +191,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Ignite"],
             "score": 12,
-            "cost": 10,
+            "caust": 10,
             "description": "Ignite / set on fire"
           },
           {
@@ -200,7 +200,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Spread"],
             "score": 14,
-            "cost": 12,
+            "caust": 12,
             "description": "Spread effect"
           },
           {
@@ -209,7 +209,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Spear"],
             "score": 15,
-            "cost": 12,
+            "caust": 12,
             "description": "Spear / pierce form"
           },
           {
@@ -218,7 +218,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["+Charge"],
             "score": 10,
-            "cost": 8,
+            "caust": 8,
             "description": "Positive charge"
           },
           {
@@ -227,7 +227,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["-Charge"],
             "score": 10,
-            "cost": 8,
+            "caust": 8,
             "description": "Negative charge (player default)"
           },
           {
@@ -236,7 +236,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Chain"],
             "score": 18,
-            "cost": 15,
+            "caust": 15,
             "description": "Chain to nearby targets"
           },
           {
@@ -245,7 +245,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["+Range"],
             "score": 8,
-            "cost": 6,
+            "caust": 6,
             "description": "Increase range"
           },
           {
@@ -254,7 +254,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["-Range"],
             "score": 5,
-            "cost": 3,
+            "caust": 3,
             "description": "Decrease range"
           },
           {
@@ -263,7 +263,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Curve Left"],
             "score": 8,
-            "cost": 5,
+            "caust": 5,
             "description": "Curve trajectory left"
           },
           {
@@ -272,7 +272,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Curve Right"],
             "score": 8,
-            "cost": 5,
+            "caust": 5,
             "description": "Curve trajectory right"
           },
           {
@@ -281,7 +281,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Curve Up"],
             "score": 8,
-            "cost": 5,
+            "caust": 5,
             "description": "Curve trajectory up"
           },
           {
@@ -290,7 +290,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Curve Down"],
             "score": 8,
-            "cost": 5,
+            "caust": 5,
             "description": "Curve trajectory down"
           },
           {
@@ -299,7 +299,7 @@ public class ComponentRegistry {
             "elements": ["Light"],
             "modifiers": [],
             "score": 12,
-            "cost": 10,
+            "caust": 10,
             "description": "Light - extra damage to undead, heals living"
           },
           {
@@ -308,26 +308,26 @@ public class ComponentRegistry {
             "elements": ["Dark"],
             "modifiers": [],
             "score": 12,
-            "cost": 10,
+            "caust": 10,
             "description": "Dark - pure damage"
           },
           {
-            "id": "plus_cost",
+            "id": "plus_caust",
             "word": "empower",
             "elements": [],
-            "modifiers": ["+Cost"],
+            "modifiers": ["+Caust"],
             "score": 20,
-            "cost": 15,
-            "description": "Increase all spell stats (and cost)"
+            "caust": 15,
+            "description": "Invest additional mana to increase spell potency"
           },
           {
-            "id": "minus_cost",
+            "id": "minus_caust",
             "word": "weaken",
             "elements": [],
-            "modifiers": ["-Cost"],
+            "modifiers": ["-Caust"],
             "score": 5,
-            "cost": 2,
-            "description": "Decrease all spell stats (and cost)"
+            "caust": 2,
+            "description": "Reduce mana investment and spell potency"
           },
           {
             "id": "target_self",
@@ -335,7 +335,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Target:Self"],
             "score": 5,
-            "cost": 0,
+            "caust": 0,
             "description": "Target the caster"
           },
           {
@@ -344,7 +344,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Target:Block"],
             "score": 5,
-            "cost": 0,
+            "caust": 0,
             "description": "Target the looked-at block"
           },
           {
@@ -353,7 +353,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Target:Entity"],
             "score": 5,
-            "cost": 0,
+            "caust": 0,
             "description": "Target a nearby entity"
           },
           {
@@ -362,7 +362,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Range:Projectile"],
             "score": 10,
-            "cost": 5,
+            "caust": 5,
             "description": "Cast as a projectile"
           },
           {
@@ -371,7 +371,7 @@ public class ComponentRegistry {
             "elements": [],
             "modifiers": ["Range:Area"],
             "score": 15,
-            "cost": 12,
+            "caust": 12,
             "description": "Area effect around caster"
           }
         ]

@@ -11,7 +11,7 @@ import java.util.List;
  * - elements      : list of base elements this word provides (Ice, Fire, Lightning, Earth, Light, Dark)
  * - modifiers     : list of modifiers this word provides
  * - score         : how much this contributes to spell power / recognition priority
- * - cost          : mana cost added when this component is used
+ * - caust         : baseline mana value / investment value for this component
  * - description   : optional tooltip text
  */
 public class SpellComponent {
@@ -20,17 +20,17 @@ public class SpellComponent {
     public final List<String> elements;
     public final List<String> modifiers;
     public final int score;
-    public final int cost;
+    public final int caust;
     public final String description;
 
     public SpellComponent(String id, String word, List<String> elements, List<String> modifiers,
-                          int score, int cost, String description) {
+                          int score, int caust, String description) {
         this.id = id;
         this.word = word.toLowerCase().trim();
         this.elements = elements != null ? elements : List.of();
         this.modifiers = modifiers != null ? modifiers : List.of();
         this.score = score;
-        this.cost = cost;
+        this.caust = caust;
         this.description = description != null ? description : "";
     }
 

@@ -2,7 +2,7 @@
 
 A NeoForge 1.21.1 magic mod where you **speak component words** to assemble and cast spells.
 
-You edit a simple JSON file to add new words, change costs, and define which elements / modifiers a word provides. The rest of the system (mana, levels, slots, effects) is already wired.
+You edit a simple JSON file to add new words, change caust values, and define which elements / modifiers a word provides. The rest of the system (mana, levels, slots, effects) is already wired.
 
 ---
 
@@ -14,7 +14,7 @@ Each component has:
 - **Elements** – zero or more of: `Ice`, `Fire`, `Lightning`, `Earth`, `Light`, `Dark`
 - **Modifiers** – zero or more of the list below
 - **score** – recognition / power weight
-- **cost** – mana cost added by this component
+- **caust** – baseline mana value / investment value for this component
 
 ### Supported Elements & Modifiers
 **Ice** → Construct, Remove, Move, Trap  
@@ -28,11 +28,32 @@ Also available as free-floating modifiers:
 - `Curve Left` / `Curve Right` / `Curve Up` / `Curve Down`
 - `Light` (extra damage to undead, heals non-undead)
 - `Dark` (damage)
-- `+Cost` (increases all stats of the spell) / `-Cost` (decreases all stats)
+- `+Caust` / `-Caust` (change invested mana and therefore potency)
 - `Target:Self` / `Target:Block` / `Target:Entity`
 - `Range:Projectile` / `Range:Area`
 
-### Caster Progression
+### Caust and spell potency
+
+- **Base Caust** is the normal mana requirement of the spell, calculated from its non-Caust-modifier components.
+- **Invested Caust** is the mana actually spent. `+Caust` components add their configured `caust` value; `-Caust` components subtract it.
+- **Potency** is `Invested Caust / Base Caust`. Continuous effects (such as damage, healing, and duration) scale with potency. Discrete block effects scale in whole units (2× potency affects two blocks).
+- The caster must have at least the invested Caust available. A spell cannot spend more mana than the caster currently has.
+
+A component JSON entry uses `caust`, for example:
+
+```json
+{
+  "id": "extra_mana",
+  "word": "surge",
+  "elements": [],
+  "modifiers": ["+Caust"],
+  "score": 8,
+  "caust": 10,
+  "description": "Invest 10 additional mana"
+}
+```
+
+## Caster Progression
 | Level | Max Mana | Slots                                      |
 |-------|----------|--------------------------------------------|
 | 1     | 100      | Range/Target, Element, Mod, Mod            |
@@ -47,7 +68,7 @@ Also available as free-floating modifiers:
 
 ## How to use (testing right now)
 
-1. Build the mod (`./gradlew build`) and put the jar in your mods folder.
+1. Build the mod with `gradle build` from this project folder (requires Java 21 and Gradle; see the build note below), then put `build/libs/voicemagic-1.0.0.jar` in your mods folder.
 2. In-game commands:
    - `/voicemagic list` – show every loaded component word
    - `/voicemagic cast frost bolt burn` – speak a sequence of words (spaces separate components)
@@ -83,36 +104,12 @@ Each entry looks like:
   "elements": ["Fire"],
   "modifiers": ["Ignite", "Spread", "Range:Projectile"],
   "score": 25,
-  "cost": 22,
+  "caust": 22,
   "description": "Big fire projectile that spreads"
 }
 ```
 
 Then run `/voicemagic reload` (or restart).
-
----
-
-## Adding real microphone support
-
-The current client key (`V`) is a placeholder.  
-To make it actually listen to your mic:
-
-1. Add an offline speech library (recommended: **Vosk** – already used by several existing voice-cast mods).
-2. While the cast key is held, capture audio → run recognition → get a string.
-3. Send that string to the server (a simple network packet) and call:
-
-```java
-ModEvents.handleSpoken(serverPlayer, recognizedText);
-```
-
-The whole spell assembly + mana + effect pipeline is already ready to receive that string.
-
-Popular reference mods that already do offline mic → text:
-- Iron’s Spells: Incantation
-- VoiceChat Spells
-- Microphone Text Input / Speech-to-Text
-
-You can either depend on one of them or embed Vosk yourself.
 
 ---
 
@@ -140,8 +137,29 @@ src/main/java/com/voicemagic/
 ## Next steps for you
 
 1. Play with the starter words and see how combinations feel.
-2. Add / rename words and rebalance costs & scores in the JSON.
+2. Add / rename words and rebalance Caust values and scores in the JSON.
 3. Expand `SpellExecutor` with better particles, real projectiles, block constructs, etc.
 4. Wire a real speech recognizer when you are happy with the component set.
 
 Enjoy building the language of magic.
+
+---
+
+## Voice casting (always listening, via Simple Voice Chat)
+
+Requires **Simple Voice Chat 2.6.x for NeoForge 1.21.1** on the client and server. Since you already have Simple Voice Chat installed, you do not need to install it again; just make sure it is the NeoForge 1.21.1 build and is present on the server too when playing multiplayer.
+
+1. Install Simple Voice Chat and set your microphone up in its settings (press `V` in-game).
+   Set the input mode to **Voice activation**, not push-to-talk, for hands-free casting.
+2. Download `vosk-model-small-en-us-0.15` from https://alphacephei.com/vosk/models
+3. Unzip it so the folder `config/voicemagic/model/` contains the folders `am`, `conf`, `graph`, ...
+   (a single extra sub-folder level is also accepted).
+4. Start the game. `/voicemagic voice` shows: listening, Simple Voice Chat connection, speech engine state.
+5. Say at least **two** component words in a row, e.g. "flame bolt". Single stray words are ignored.
+
+Commands: `/voicemagic voice on|off|status`
+
+
+## Build note
+
+This source project targets Minecraft 1.21.1 / NeoForge 21.1.92 and Java 21. The source archive does not include a compiled mod jar. Run `gradle build` in this folder on a machine with internet access so Gradle can download the NeoForge and Vosk dependencies. The output jar will be in `build/libs/`.

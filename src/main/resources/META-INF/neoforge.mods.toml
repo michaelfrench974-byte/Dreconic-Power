@@ -25,3 +25,10 @@ type="required"
 versionRange="[1.21.1,1.22)"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.voicemagic]]
+modId="voicechat_api"
+type="optional"
+versionRange="[2.6.0,)"
+ordering="AFTER"
+side="BOTH"

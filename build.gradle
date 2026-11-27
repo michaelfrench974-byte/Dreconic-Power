@@ -46,11 +46,24 @@ neoForge {
 
 repositories {
     mavenCentral()
+    maven { url = 'https://maven.maxhenkel.de/repository/public' }
 }
 
+// Bundle libraries inside the mod jar (Jar-in-Jar)
+jarJar.enable()
+
 dependencies {
-    // Optional: for offline speech recognition later
-    // implementation "com.alphacephei:vosk:0.3.45"
+    // Simple Voice Chat API (provided at runtime by the Simple Voice Chat mod itself)
+    compileOnly "de.maxhenkel.voicechat:voicechat-api:2.6.0"
+
+    // Offline speech recognition (bundled inside our jar). JNA is already shipped by Minecraft.
+    jarJar(implementation("com.alphacephei:vosk")) {
+        version {
+            strictly '[0.3.45,0.4)'
+            prefer '0.3.45'
+        }
+        exclude group: 'net.java.dev.jna'
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
